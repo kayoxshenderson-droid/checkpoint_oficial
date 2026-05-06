@@ -3,8 +3,6 @@ import numpy as np
 
 df = pd.read_csv('EV_Charging_Data.csv')
 
-df = df.head(110)
-
 total_linhas = len(df)
 print(f"--- VERIFICAÇÃO DE REQUISITOS ---")
 print(f"Total de observações encontradas: {total_linhas}")
@@ -16,35 +14,56 @@ print("-" * 33 + "\n")
 
 # ==== Atividade 1 ====
 
-df = df.rename(columns={
-    "connectionTime_decimal": "hora_conexao",
-    "chargingDuration": "duracao",
-    "kWhDelivered": "energia_kwh",
-    "dayIndicator": "dia"
-})
+colunas_processadas = {
+    "periodo_do_dia",
+    "tipo_usuario",
+    "prioridade_energia",
+    "nivel_duracao",
+    "energia_consumida_kwh_int",
+    "sessoes_por_dia",
+    "duracao_horas",
+    "energia_kwh"
+}
 
-# Qualitativas nominais
-df["periodo"] = pd.cut(df["hora_conexao"], bins=[0, 6, 12, 18, 24],
-                        labels=["Madrugada", "Manha", "Tarde", "Noite"])
+if colunas_processadas.issubset(df.columns):
+    # Base atual, ja categorizada a partir do arquivo original.
+    df["periodo"] = df["periodo_do_dia"]
+    df["dia_cat"] = df["tipo_usuario"].astype(str)
+    df["prioridade"] = df["prioridade_energia"]
+    df["energia_int"] = df["energia_consumida_kwh_int"]
+    df["uso_dia"] = df["sessoes_por_dia"]
+    df["duracao_continua"] = df["duracao_horas"]
+    df["energia_continua"] = df["energia_kwh"]
+else:
+    df = df.rename(columns={
+        "connectionTime_decimal": "hora_conexao",
+        "chargingDuration": "duracao",
+        "kWhDelivered": "energia_kwh",
+        "dayIndicator": "dia"
+    })
 
-df["dia_cat"] = df["dia"].astype(str)
+    # Qualitativas nominais
+    df["periodo"] = pd.cut(df["hora_conexao"], bins=[0, 6, 12, 18, 24],
+                            labels=["Madrugada", "Manha", "Tarde", "Noite"])
 
-# Qualitativas ordinais
-df["prioridade"] = pd.cut(df["energia_kwh"],
-                          bins=[0, 10, 30, 100],
-                          labels=["Baixa", "Media", "Alta"])
+    df["dia_cat"] = df["dia"].astype(str)
 
-df["nivel_duracao"] = pd.cut(df["duracao"],
-                               bins=[0, 2, 5, 10, 100],
-                               labels=["Muito curta", "Curta", "Media", "Longa"])
+    # Qualitativas ordinais
+    df["prioridade"] = pd.cut(df["energia_kwh"],
+                              bins=[0, 10, 30, 100],
+                              labels=["Baixa", "Media", "Alta"])
 
-# Quantitativas discretas
-df["energia_int"] = df["energia_kwh"].fillna(0).astype(int)
-df["uso_dia"] = df.groupby("dia")["dia"].transform("count")
+    df["nivel_duracao"] = pd.cut(df["duracao"],
+                                   bins=[0, 2, 5, 10, 100],
+                                   labels=["Muito curta", "Curta", "Media", "Longa"])
 
-# Quantitativas contínuas
-df["duracao_continua"] = df["duracao"]
-df["energia_continua"] = df["energia_kwh"]
+    # Quantitativas discretas
+    df["energia_int"] = df["energia_kwh"].fillna(0).astype(int)
+    df["uso_dia"] = df.groupby("dia")["dia"].transform("count")
+
+    # Quantitativas contínuas
+    df["duracao_continua"] = df["duracao"]
+    df["energia_continua"] = df["energia_kwh"]
 
 
 # ==== Atividade 2 - variável quantitativa discreta ====
